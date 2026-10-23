@@ -31,7 +31,7 @@ Testado em outubro de 2026: STF (portal e pesquisa de jurisprudência), STJ (sú
 
 ## Captcha
 
-Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJMG, por exemplo). Nesse caso o ler-pagina **mostra a tela escondida** para você digitar o código e **volta sozinho** para a sua área de trabalho assim que o captcha some. Ninguém resolve captcha por você. Se você não resolver em 3 minutos, a tela volta e o Claude avisa.
+Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJMG, por exemplo). Nesse caso aparece uma **janelinha no canto da tela** com a imagem da página escondida: você clica no campo, digita o código e aperta Enter. A janelinha fecha sozinha quando o site libera, e o Claude continua. Sua área de trabalho não muda. Ninguém resolve captcha por você; se você fechar a janelinha ou não responder em 3 minutos, o Claude avisa.
 
 ## Privacidade
 

@@ -22,7 +22,7 @@ Then restart Claude Code. The installer checks Node.js 22+ (installs it with win
 
 ## Captcha
 
-If a site always asks for a captcha, ler-pagina **switches your screen to the hidden desktop** so you can type it, and switches back as soon as the captcha is gone (or after 3 minutes). It never solves captchas by itself.
+If a site asks for a captcha, a **small window pops up in the corner of your screen** showing the hidden page live; your clicks and keystrokes there are forwarded to it, and the window closes by itself once the site lets you through (or after 3 minutes). Your desktop is never switched. It never solves captchas by itself.
 
 ## Privacy
 

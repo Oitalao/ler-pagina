@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $repo    = 'https://raw.githubusercontent.com/Oitalao/ler-pagina/main'
 $destino = Join-Path $env:LOCALAPPDATA 'Programs\ler-pagina'
 $skill   = Join-Path $env:USERPROFILE '.claude\skills\ler-pagina'
-$arquivos = @('ler-pagina.mjs', 'iniciar-oculto.ps1', 'ler-pagina.cmd', 'ler-pagina', 'desinstalar.ps1', 'config.exemplo.json')
+$arquivos = @('ler-pagina.mjs', 'iniciar-oculto.ps1', 'janela-captcha.ps1', 'ler-pagina.cmd', 'ler-pagina', 'desinstalar.ps1', 'config.exemplo.json')
 
 function Passo($t) { Write-Host "`n> $t" -ForegroundColor Cyan }
 function Ok($t)    { Write-Host "  $t" -ForegroundColor Green }

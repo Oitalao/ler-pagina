@@ -24,7 +24,7 @@ ler-pagina "<url>" --rota <nome>       # força uma rota de saída (direta ou um
 
 ## Captcha
 
-Se o site pedir captcha (ex.: pesquisa de jurisprudência do TJMG, que pede para todo mundo), a ferramenta **mostra a área oculta na tela** para o usuário digitar e volta sozinha assim que o captcha some. Antes de rodar uma consulta que você sabe que terá captcha, avise o usuário em uma linha. Se ninguém resolver em 3 minutos, a ferramenta sai com `BLOQUEADO` (código 3); não repetir em laço.
+Se o site pedir captcha (ex.: pesquisa de jurisprudência do TJMG, que pede para todo mundo), abre uma **janelinha no canto da tela do usuário** com a imagem ao vivo da página; ele clica e digita ali, e a janelinha fecha sozinha quando o site libera. A área de trabalho dele não muda. Antes de rodar uma consulta que você sabe que terá captcha, avise o usuário em uma linha. Se ninguém resolver em 3 minutos, a ferramenta sai com `BLOQUEADO` (código 3); não repetir em laço.
 
 ## Códigos de saída
 
