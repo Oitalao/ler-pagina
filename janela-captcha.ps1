@@ -29,7 +29,7 @@ $form.StartPosition = 'Manual'
 $form.Location = New-Object System.Drawing.Point(($area.Right - 740), ($area.Bottom - 590))
 
 $dica = New-Object System.Windows.Forms.Label
-$dica.Dock = 'Top'; $dica.Height = 36; $dica.Padding = New-Object System.Windows.Forms.Padding(8, 4, 8, 0)
+$dica.Dock = 'Top'; $dica.Height = 52; $dica.Padding = New-Object System.Windows.Forms.Padding(8, 4, 8, 0)
 $dica.Text = "O site pediu uma verificação. Clique no campo da imagem e digite (Enter envia). Esta janela fecha sozinha quando liberar; fechar = desistir."
 $form.Controls.Add($dica)
 
