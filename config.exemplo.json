@@ -1,0 +1,6 @@
+{
+  "porta": 9340,
+  "rotas": [
+    { "nome": "casa", "ssh": "meu-servidor", "portaSocks": 1081 }
+  ]
+}
