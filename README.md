@@ -31,7 +31,7 @@ Testado em outubro de 2026: STF (portal e pesquisa de jurisprudência), STJ (sú
 
 ## Captcha
 
-Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJMG, por exemplo). Nesse caso aparece uma **janelinha no canto da tela** com a imagem da página escondida: você clica no campo, digita o código e aperta Enter. A janelinha fecha sozinha quando o site libera, e o Claude continua. Sua área de trabalho não muda. Ninguém resolve captcha por você; se você fechar a janelinha ou não responder em 3 minutos, o Claude avisa.
+Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJMG, por exemplo). O mesmo vale para as verificações embutidas do tipo "Sou humano" ou "Não sou um robô" (hCaptcha, reCAPTCHA, Turnstile), como a do comprovante de CNPJ da Receita, onde você marca o quadrado e clica em Consultar. Nesse caso aparece uma **janelinha no canto da tela** com a imagem da página escondida: você clica no campo, digita o código e aperta Enter. A janelinha fecha sozinha quando o site libera, e o Claude continua. Sua área de trabalho não muda. Ninguém resolve captcha por você; se você fechar a janelinha ou não responder em 3 minutos, o Claude avisa.
 
 ## Privacidade
 
@@ -46,6 +46,7 @@ Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJM
 ler-pagina "https://scon.stj.jus.br/SCON/sumstj/doc.jsp?sumula=632"   # texto da página
 ler-pagina "<url>" --html                                              # HTML completo
 ler-pagina "<url>" --baixar acordao.pdf                                # salva PDF/DOCX
+ler-pagina "<url>" --clicar "button[name=qsa]" --antes antes.html     # clica num botão depois que a página libera
 ```
 
 ## Segunda internet (opcional)

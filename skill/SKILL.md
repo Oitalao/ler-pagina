@@ -15,6 +15,7 @@ ler-pagina "<url>" --html              # HTML completo
 ler-pagina "<url>" --baixar <arquivo>  # PDF, DOCX etc., salvo depois da verificação
 ler-pagina "<url>" --espera 40         # espera máxima por rota (padrão 25 s)
 ler-pagina "<url>" --rota <nome>       # força uma rota de saída (direta ou uma configurada)
+ler-pagina "<url>" --clicar "<seletor CSS>" [--antes <arquivo>]  # depois que a página libera, clica num elemento e devolve a página seguinte
 ```
 
 - Funciona no Git Bash (`ler-pagina`) e no PowerShell/cmd (`ler-pagina.cmd`).
@@ -24,7 +25,11 @@ ler-pagina "<url>" --rota <nome>       # força uma rota de saída (direta ou um
 
 ## Captcha
 
-Se o site pedir captcha (ex.: pesquisa de jurisprudência do TJMG, que pede para todo mundo), abre uma **janelinha no canto da tela do usuário** com a imagem ao vivo da página; ele clica e digita ali, e a janelinha fecha sozinha quando o site libera. A área de trabalho dele não muda. Antes de rodar uma consulta que você sabe que terá captcha, avise o usuário em uma linha. Se ninguém resolver em 3 minutos, a ferramenta sai com `BLOQUEADO` (código 3); não repetir em laço.
+Se o site pedir captcha (ex.: pesquisa de jurisprudência do TJMG, que pede para todo mundo) ou tiver uma verificação embutida "Sou humano"/"Não sou um robô" (hCaptcha, reCAPTCHA, Turnstile, como no comprovante de CNPJ da Receita), abre uma **janelinha no canto da tela do usuário** com a imagem ao vivo da página; ele clica e digita ali, e a janelinha fecha sozinha quando o site libera. A área de trabalho dele não muda. Antes de rodar uma consulta que você sabe que terá captcha, avise o usuário em uma linha. Se ninguém resolver em 3 minutos, a ferramenta sai com `BLOQUEADO` (código 3); não repetir em laço.
+
+Formulário com verificação seguido de botão (ex.: Receita: marcar "Sou humano" e clicar em Consultar): o usuário faz as duas coisas na janelinha. Se depois for preciso clicar em outro botão da página de resultado (ex.: "Consultar QSA"), usar `--clicar 'button[name=qsa]' --antes comprovante.html`: uma só verificação para as duas páginas.
+
+Não usar o Claude in Chrome como atalho para captcha: ele pode estar ligado ao Chrome de **outro computador** com a mesma conta. Se precisar dele, conferir antes (`list_connected_browsers`) e confirmar que é o deste computador.
 
 ## Códigos de saída
 

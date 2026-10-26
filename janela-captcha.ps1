@@ -30,7 +30,7 @@ $form.Location = New-Object System.Drawing.Point(($area.Right - 740), ($area.Bot
 
 $dica = New-Object System.Windows.Forms.Label
 $dica.Dock = 'Top'; $dica.Height = 52; $dica.Padding = New-Object System.Windows.Forms.Padding(8, 4, 8, 0)
-$dica.Text = "O site pediu uma verificação. Clique no campo da imagem e digite (Enter envia). Esta janela fecha sozinha quando liberar; fechar = desistir."
+$dica.Text = "O site pediu uma verificação. Resolva aqui (marque o quadrado ou digite o código) e clique no botão de enviar ou consultar da página; Enter também envia. Esta janela fecha sozinha quando liberar; fechar = desistir."
 $form.Controls.Add($dica)
 
 $tela = New-Object System.Windows.Forms.PictureBox

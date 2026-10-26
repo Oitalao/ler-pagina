@@ -2,11 +2,12 @@
 // Passa pela verificacao anti-robo de JavaScript (Cloudflare etc.) porque e um Chrome comum, com janela,
 // so que numa area de trabalho do Windows que o usuario nao ve. Nao usa o perfil nem os cookies do usuario.
 //
-// Uso: ler-pagina <url> [--html] [--baixar <arquivo>] [--espera <segundos>] [--rota <nome>]
+// Uso: ler-pagina <url> [--html] [--baixar <arquivo>] [--espera <segundos>] [--rota <nome>] [--clicar <seletor> [--antes <arquivo>]]
 //
 // Rotas de saida: "direta" (a internet do computador) e, se configuradas, rotas por tunel SSH (outra internet).
 // Se uma rota for barrada num site, tenta a proxima e lembra por 2 h.
-// Captcha: mostra a area oculta na tela para o usuario resolver e volta assim que o captcha some.
+// Captcha (inclusive "Sou humano" de hCaptcha/reCAPTCHA/Turnstile): abre uma janelinha com a pagina oculta para o
+// usuario resolver e enviar o formulario; volta quando a pagina muda e a verificacao some.
 //
 // Privacidade: cada rota usa um contexto so de memoria, que some quando o navegador do agente fecha.
 // Depois de cada leitura, apaga todo cookie que nao seja de dominio oficial (.jus.br, .gov.br, .leg.br, .mp.br,
@@ -38,12 +39,16 @@ const TECNICOS = new Set(['cf_clearance', '__cf_bm', '_cfuvid']);
 const DESAFIO = /Verifica..o autom.tica em andamento|Just a moment|Um momento…|Checking your browser|Enable JavaScript and cookies to continue|Verify you are human|Confirme que voc. . humano/i;
 const RECUSA = /Request Rejected|Sorry, you have been blocked|Attention Required|Access Denied|Acesso negado|Too Many Requests|Error 1020|Error 1015/i;
 const CAPTCHA = /Informe o c.digo|Digite o c.digo|Digite os n.meros|captcha|n.o sou um rob|I'm not a robot|Selecione todas as imagens/i;
+// verificacao embutida em iframe (hCaptcha "Sou humano", reCAPTCHA, Turnstile): o texto dela nao aparece no HTML da
+// pagina, so o iframe ou a div do widget. Ex.: comprovante de CNPJ da Receita (hCaptcha + botao Consultar).
+const WIDGET = /<iframe[^>]+src="[^"]*(hcaptcha\.com|google\.com\/recaptcha|recaptcha\.net|challenges\.cloudflare\.com\/cdn-cgi\/challenge-platform\/[^"]*turnstile)|class="[^"]*(h-captcha|g-recaptcha|cf-turnstile)/i;
+const pedeVerificacao = r => (r.texto.length < 3000 && CAPTCHA.test(r.texto)) || (r.texto.length < 4000 && !DESAFIO.test(r.texto) && WIDGET.test(r.html));
 const BLOQUEIO_HORAS = 2;
 
 const args = process.argv.slice(2);
 const url = args.find(a => /^https?:\/\//i.test(a));
 const opc = n => { const i = args.indexOf(n); return i >= 0 ? (args[i + 1] ?? true) : null; };
-if (!url) { console.error('uso: ler-pagina <url> [--html] [--baixar arquivo] [--espera segundos] [--rota nome]'); process.exit(2); }
+if (!url) { console.error('uso: ler-pagina <url> [--html] [--baixar arquivo] [--espera segundos] [--rota nome] [--clicar seletor [--antes arquivo]]'); process.exit(2); }
 // espera por rota: desafio automatico da Cloudflare libera em < 15 s; passou disso, e desafio de clicar ou IP marcado
 const esperaMax = Number(opc('--espera')) || 25;
 const host = new URL(url).hostname;
@@ -175,7 +180,7 @@ async function resolverCaptcha(targetId, ler, s) {
       await foto();
       let r; try { r = await ler(); } catch { seguidas = 0; continue; }
       const navegou = (await navAtual()) !== nav0;
-      seguidas = (navegou && r.texto.length > 0 && !CAPTCHA.test(r.texto)) ? seguidas + 1 : 0;
+      seguidas = (navegou && r.texto.length > 0 && !pedeVerificacao(r)) ? seguidas + 1 : 0;
       if (seguidas >= 2) { resolvido = true; break; }   // duas leituras seguidas sem captcha, ja em outra pagina
     }
     writeFileSync(join(pasta, 'fim'), '1');   // fecha a janelinha
@@ -209,7 +214,7 @@ async function tentar(rota) {
       try { r = await ler(); } catch { r = { html: '', texto: '', arquivo: false }; }
       const curta = r.texto.length < 3000;   // tela de desafio/recusa/captcha e sempre curta
       if (curta && RECUSA.test(r.texto)) { estado = 'recusado'; break; }
-      if (curta && CAPTCHA.test(r.texto)) {
+      if (pedeVerificacao(r)) {
         if (captchaVisto || process.env.LER_PAGINA_SEM_TELA) { estado = 'captcha'; break; }
         captchaVisto = true;
         console.error('captcha: abri uma janelinha no canto da tela para o usuario resolver...');
@@ -221,8 +226,18 @@ async function tentar(rota) {
       await dormir(1500);
     }
     if (estado === 'ok' && !r.arquivo) { await dormir(1500); try { r = await ler(); } catch {} }
+    // --clicar <seletor CSS>: depois que a pagina liberou, clica num elemento (ex.: botao "QSA" do comprovante de CNPJ,
+    // que so existe depois do captcha) e devolve a pagina resultante; --antes <arquivo> guarda a pagina de antes do clique.
+    const sel = opc('--clicar'); let erroClique = null;
+    if (estado === 'ok' && !r.arquivo && sel && sel !== true) {
+      const antes = opc('--antes');
+      if (antes && antes !== true) writeFileSync(antes, opc('--html') ? r.html : r.texto);
+      const clicou = await s('Runtime.evaluate', { expression: `(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e)return false;e.scrollIntoView();e.click();return true})()`, returnByValue: true }).catch(() => null);
+      if (!clicou || !clicou.result || clicou.result.value !== true) { estado = 'falhou'; erroClique = `--clicar: elemento nao encontrado: ${sel}`; }
+      else { await dormir(4000); try { r = await ler(); } catch {} }
+    }
 
-    let saida = null;
+    let saida = erroClique;
     if (estado === 'ok' && (opc('--baixar') || r.arquivo)) {
       let destino = opc('--baixar');
       if (!destino || destino === true) { mkdirSync(TEMP, { recursive: true }); destino = join(TEMP, `arquivo-${Date.now()}.pdf`); }

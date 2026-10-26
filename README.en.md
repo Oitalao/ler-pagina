@@ -22,7 +22,7 @@ Then restart Claude Code. The installer checks Node.js 22+ (installs it with win
 
 ## Captcha
 
-If a site asks for a captcha, a **small window pops up in the corner of your screen** showing the hidden page live; your clicks and keystrokes there are forwarded to it, and the window closes by itself once the site lets you through (or after 3 minutes). Your desktop is never switched. It never solves captchas by itself.
+If a site asks for a captcha (including embedded "I am human" checkboxes such as hCaptcha, reCAPTCHA or Turnstile), a **small window pops up in the corner of your screen** showing the hidden page live; your clicks and keystrokes there are forwarded to it, and the window closes by itself once the site lets you through (or after 3 minutes). Your desktop is never switched. It never solves captchas by itself.
 
 ## Privacy
 
@@ -34,6 +34,7 @@ Cookies live in an in-memory browser context and vanish when the computer shuts 
 ler-pagina "<url>"                  # page text
 ler-pagina "<url>" --html           # full HTML
 ler-pagina "<url>" --baixar file.pdf
+ler-pagina "<url>" --clicar "button[name=qsa]" --antes before.html   # click an element once the page is through
 ```
 
 Optional second exit route through an SSH SOCKS tunnel: see `config.exemplo.json` and the Portuguese README.
