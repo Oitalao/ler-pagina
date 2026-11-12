@@ -37,17 +37,39 @@ Alguns sites pedem captcha para todo mundo (a pesquisa de jurisprudência do TJM
 
 - Nada seu é usado: nem seu Chrome, nem seus cookies, nem suas senhas.
 - Os cookies do navegador do agente ficam só na memória e somem quando o computador desliga.
+- O texto é lido num "mundo isolado" da página, invisível aos scripts do site.
+- Os arquivos temporários (textos grandes e PDFs) são apagados sozinhos depois de um dia.
 - Depois de cada leitura, ele apaga todo cookie que não seja de site oficial (`.jus.br`, `.gov.br`, `.leg.br`, `.mp.br`, `.def.br`) nem a liberação técnica da Cloudflare. No Jusbrasil, os cookies de rastreamento são apagados.
 - O programa não manda nada para servidor nenhum além do próprio site consultado.
+
+## Gasta poucos tokens
+
+Cada palavra que o Claude lê custa. Por isso o ler-pagina entrega o mínimo necessário:
+
+- **Texto limpo**, uma linha por parágrafo, sem menu, rodapé, banner de cookies nem formulário de busca.
+- **Sem texto revogado.** O que o Planalto risca sai, e fica só o rótulo: "§ 5º (Revogado pela Lei nº 9.528, de 1997)". A Lei 8.213/91, por exemplo, cai de 323 mil para 177 mil caracteres, e o Claude não cita redação revogada por engano.
+- **Só o trecho pedido.** Com `--buscar "Art. 1.790"`, vem só o artigo inteiro (caput, incisos e parágrafos), não o Código Civil todo.
+- **Página grande vai para arquivo.** Acima de 15 mil caracteres, ele mostra o começo e grava o texto completo num arquivo, onde o Claude procura sem reler tudo.
+- **PDF já sai em texto**, com a marca `[pag. N]` para citar a folha.
+- **Vários endereços numa chamada só.**
 
 ## Uso pelo terminal
 
 ```
 ler-pagina "https://scon.stj.jus.br/SCON/sumstj/doc.jsp?sumula=632"   # texto da página
-ler-pagina "<url>" --html                                              # HTML completo
+ler-pagina "<url>" --buscar "Art. 5"                                   # só os trechos com o termo
+ler-pagina "<url1>" "<url2>"                                           # vários endereços de uma vez
+ler-pagina "<url>" --md                                                # Markdown, com links
+ler-pagina "<url>" --html --saida pagina.html                          # HTML completo
+ler-pagina "<url-do-pdf>"                                              # texto do PDF, com [pag. N]
 ler-pagina "<url>" --baixar acordao.pdf                                # salva PDF/DOCX
+ler-pagina "<url>" --com-revogados                                     # mantém o texto riscado
 ler-pagina "<url>" --clicar "button[name=qsa]" --antes antes.html     # clica num botão depois que a página libera
+ler-pagina --testar                                                    # confere se está funcionando
+ler-pagina --ajuda                                                     # todas as opções
 ```
+
+O texto de PDF usa o `pdftotext`, que já vem com o Git for Windows (o Claude Code no Windows usa o Git). Se não houver, ele tenta o PyMuPDF e, sem os dois, só salva o arquivo.
 
 ## Segunda internet (opcional)
 
@@ -56,6 +78,10 @@ Se um tribunal barrar o IP do seu escritório por excesso de consultas, o ler-pa
 ## Uso responsável
 
 Use para consultas pontuais a páginas públicas, como uma pessoa faria. Não use para raspar tribunal em massa: além de sobrecarregar serviço público, o site vai barrar o seu IP.
+
+## Atualizar
+
+Rode de novo a mesma linha da instalação. Ela troca os arquivos do programa e mantém a sua configuração (`config.json`).
 
 ## Desinstalar
 

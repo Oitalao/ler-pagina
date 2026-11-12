@@ -28,14 +28,36 @@ If a site asks for a captcha (including embedded "I am human" checkboxes such as
 
 Cookies live in an in-memory browser context and vanish when the computer shuts down. After each read, every cookie that is not from an official Brazilian government domain (`.jus.br`, `.gov.br`, `.leg.br`, `.mp.br`, `.def.br`) or a technical anti-bot clearance cookie (`cf_clearance`, `__cf_bm`, `_cfuvid`) is deleted.
 
+## Token-frugal output
+
+Everything the model reads costs tokens, so the output is trimmed at the source:
+
+- **Clean text**, one line per paragraph, without navigation, footers, cookie banners or search forms.
+- **No repealed text.** Struck-through provisions (how Planalto marks repealed law) are dropped, keeping only the label: "§ 5º (Revogado pela Lei nº 9.528, de 1997)". Law 8.213/91 shrinks from 323k to 177k characters, and the model stops quoting repealed wording.
+- **Just the passage you need.** `--buscar "Art. 1.790"` returns only that whole article (accent- and case-insensitive; "Art. 5" does not match "Art. 50").
+- **Big pages go to a file.** Above 15,000 characters it prints the start and saves the full text to a temp file the agent can grep.
+- **PDFs come out as text**, with `[pag. N]` page markers.
+- **Several URLs in one call.**
+
 ## Usage
 
 ```
-ler-pagina "<url>"                  # page text
-ler-pagina "<url>" --html           # full HTML
-ler-pagina "<url>" --baixar file.pdf
+ler-pagina "<url>"                         # clean page text
+ler-pagina "<url>" --buscar "Art. 5"       # only the matching passages (repeatable)
+ler-pagina "<url1>" "<url2>"               # several pages at once
+ler-pagina "<url>" --md                    # Markdown with links
+ler-pagina "<url>" --html --saida p.html   # full HTML
+ler-pagina "<pdf-url>"                     # PDF text with page markers
+ler-pagina "<url>" --baixar file.pdf       # save the file
+ler-pagina "<url>" --com-revogados         # keep struck-through text
 ler-pagina "<url>" --clicar "button[name=qsa]" --antes before.html   # click an element once the page is through
+ler-pagina --testar                        # self-test
+ler-pagina --ajuda                         # all options
 ```
+
+PDF text uses `pdftotext`, bundled with Git for Windows (which Claude Code on Windows already requires), or PyMuPDF.
+
+To update, run the install line again; your `config.json` is kept.
 
 Optional second exit route through an SSH SOCKS tunnel: see `config.exemplo.json` and the Portuguese README.
 

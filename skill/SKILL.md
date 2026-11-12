@@ -1,49 +1,52 @@
 ---
 name: ler-pagina
-description: Ler página ou baixar arquivo de site que barra curl/WebFetch com verificação anti-robô (Cloudflare "Verificação automática em andamento", "Just a moment", HTTP 403 com cf-mitigated, "Enable JavaScript and cookies") ou captcha — STF, STJ, tribunais, Planalto, Jusbrasil, diários oficiais. Usar SEMPRE que um curl ou WebFetch voltar 403 ou página de desafio, em vez de procurar fonte secundária ou dizer que não foi possível conferir. Windows.
+description: Ler página, lei, súmula, acórdão ou PDF de STF, STJ, tribunais (*.jus.br), Planalto, Jusbrasil, Receita e diários oficiais, ou de qualquer site que barre curl/WebFetch com verificação anti-robô (Cloudflare "Just a moment", "Verificação automática em andamento", HTTP 403) ou captcha. Usar em vez de procurar fonte secundária ou dizer que não foi possível conferir. Windows.
 ---
 
 # ler-pagina (navegador do agente)
 
-Neste computador há um navegador **do agente**, com perfil próprio (nunca o do usuário), rodando numa **área de trabalho oculta do Windows**: não aparece na tela, na barra de tarefas nem no Alt+Tab, e para o site é um navegador comum com janela. Por isso passa na verificação JavaScript que barra curl, WebFetch, Playwright e navegador headless.
+Chrome **do agente** (perfil próprio, nunca o do usuário) numa área de trabalho oculta do Windows: para o site é um navegador comum, por isso passa na verificação que barra curl, WebFetch e headless.
+
+**Ir direto ao ler-pagina** (sem tentar WebFetch antes, que falha e gasta uma rodada) em: `*.jus.br`, `planalto.gov.br`, `jusbrasil.com.br`, `receita.fazenda.gov.br`. Nos demais sites, usar quando o WebFetch voltar 403 ou página de desafio.
+
+## Gastar poucos tokens
+
+A saída padrão já vem limpa: uma linha por parágrafo, sem menu, rodapé, banner de cookies nem texto riscado (revogado, no Planalto: fica só "§ 5º (Revogado pela Lei ...)"). Acima de 15 mil caracteres mostra o começo e grava o texto inteiro num arquivo (`[CORTADO: ... Texto completo: <arquivo>]`): procure nele com Grep em vez de pedir de novo.
+
+- Quer um dispositivo, súmula ou trecho? **Use `--buscar`**: devolve só os parágrafos com o termo (ignora acento e caixa; "Art. 5" não pega "Art. 50"; num artigo de lei traz o artigo inteiro, até o próximo "Art."). Em PDF, cada trecho vem com `[pag. N]`.
+- Vários endereços numa chamada só: `ler-pagina "<url1>" "<url2>"` (saídas separadas por `===== <url>`).
 
 ## Comando
 
 ```
-ler-pagina "<url>"                     # texto limpo da página na saída
-ler-pagina "<url>" --html              # HTML completo
-ler-pagina "<url>" --baixar <arquivo>  # PDF, DOCX etc., salvo depois da verificação
-ler-pagina "<url>" --espera 40         # espera máxima por rota (padrão 25 s)
-ler-pagina "<url>" --rota <nome>       # força uma rota de saída (direta ou uma configurada)
-ler-pagina "<url>" --clicar "<seletor CSS>" [--antes <arquivo>]  # depois que a página libera, clica num elemento e devolve a página seguinte
+ler-pagina "<url>"                           # texto limpo
+ler-pagina "<url>" --buscar "Art. 1.790"     # só os trechos (repetível; --contexto N parágrafos depois, padrão 2)
+ler-pagina "<url>" --md                      # Markdown com links (para seguir resultados de busca)
+ler-pagina "<url>" --html --saida pag.html   # HTML completo (nunca cortado: sempre com --saida)
+ler-pagina "<url.pdf>"                       # PDF: sai o texto, com [pag. N]
+ler-pagina "<url>" --baixar a.pdf [--texto]  # salva o arquivo (e mostra o texto)
+ler-pagina "<url>" --com-revogados           # mantém o texto riscado
+ler-pagina "<url>" --max 0                   # sem corte (evitar)
+ler-pagina "<url>" --clicar "<seletor CSS>" [--antes arquivo]   # clica depois que a página libera
+ler-pagina --testar                          # confere se está funcionando
 ```
 
-- Funciona no Git Bash (`ler-pagina`) e no PowerShell/cmd (`ler-pagina.cmd`).
-- Se o endereço for um PDF, ele baixa sozinho e responde `ARQUIVO: <caminho>`; extrair o texto depois (ex.: pymupdf). Apagar o temporário ao terminar.
-- Primeira consulta a um site leva ~10-20 s (resolve o desafio); as seguintes ~4 s.
-- Sempre pôr a URL entre aspas. Nunca pôr dado pessoal do usuário ou de cliente na URL.
-
-## Captcha
-
-Se o site pedir captcha (ex.: pesquisa de jurisprudência do TJMG, que pede para todo mundo) ou tiver uma verificação embutida "Sou humano"/"Não sou um robô" (hCaptcha, reCAPTCHA, Turnstile, como no comprovante de CNPJ da Receita), abre uma **janelinha no canto da tela do usuário** com a imagem ao vivo da página; ele clica e digita ali, e a janelinha fecha sozinha quando o site libera. A área de trabalho dele não muda. Antes de rodar uma consulta que você sabe que terá captcha, avise o usuário em uma linha. Se ninguém resolver em 3 minutos, a ferramenta sai com `BLOQUEADO` (código 3); não repetir em laço.
-
-Formulário com verificação seguido de botão (ex.: Receita: marcar "Sou humano" e clicar em Consultar): o usuário faz as duas coisas na janelinha. Se depois for preciso clicar em outro botão da página de resultado (ex.: "Consultar QSA"), usar `--clicar 'button[name=qsa]' --antes comprovante.html`: uma só verificação para as duas páginas.
-
-Não usar o Claude in Chrome como atalho para captcha: ele pode estar ligado ao Chrome de **outro computador** com a mesma conta. Se precisar dele, conferir antes (`list_connected_browsers`) e confirmar que é o deste computador.
+Opções menos usadas: `--espera <s>` (padrão 25 por rota), `--rota <nome>`, `--saida <arquivo>`, `--ajuda`. Funciona no Git Bash (`ler-pagina`) e no PowerShell/cmd (`ler-pagina.cmd`). Sempre pôr a URL entre aspas e nunca pôr dado pessoal do usuário ou de cliente na URL. Primeira consulta a um site leva 10 a 20 s; as seguintes, uns 4 s.
 
 ## Códigos de saída
 
-- `0`: ok.
-- `3`: `BLOQUEADO` (desafio que não libera em nenhuma rota, IP recusado ou captcha não resolvido).
-- `5`: a página veio vazia ou o download falhou.
-- Página com erro do próprio site (ex.: "Request Rejected", "Ocorreu um erro ao buscar o documento") é resposta do site, não defeito da ferramenta. Muitas consultas seguidas ao mesmo tribunal fazem ele barrar o IP por um tempo: espaçar.
+`0` ok · `2` uso errado · `3` BLOQUEADO (desafio que não libera, IP recusado ou captcha não resolvido; não repetir em laço) · `4` `--buscar` não achou (o texto inteiro fica no arquivo indicado) · `5` página vazia, elemento de `--clicar` ausente ou download falhou.
 
-## Rotas de saída
+Página curta com erro do próprio site ("Request Rejected", "Ocorreu um erro ao buscar o documento") é resposta do site. Muitas consultas seguidas ao mesmo tribunal fazem ele barrar o IP por um tempo: espaçar e juntar endereços numa chamada.
 
-Por padrão só existe a rota `direta` (a internet deste computador). Se o arquivo `config.json` tiver rotas por túnel SSH (outra internet, por exemplo a de casa), a ferramenta tenta a próxima quando uma for barrada e lembra por 2 h qual estava barrada naquele site.
+## Captcha
 
-## Privacidade
+Se o site pedir captcha (ex.: jurisprudência do TJMG) ou tiver "Sou humano"/"Não sou um robô" (hCaptcha, reCAPTCHA, Turnstile, como no comprovante de CNPJ da Receita), abre uma **janelinha no canto da tela do usuário** com a imagem ao vivo da página; ele clica e digita ali e ela fecha sozinha quando o site libera (máx. 3 min). Avisar o usuário em uma linha antes de rodar consulta que terá captcha. Receita: o usuário marca a verificação e clica em Consultar na janelinha; para a página seguinte, `--clicar 'button[name=qsa]' --antes comprovante.html`.
 
-- Cookies ficam num contexto só de memória, que some quando o navegador do agente fecha.
-- Depois de cada leitura, a ferramenta apaga todo cookie que não seja de domínio oficial (`.jus.br`, `.gov.br`, `.leg.br`, `.mp.br`, `.def.br`) nem cookie técnico de verificação anti-robô (`cf_clearance`, `__cf_bm`, `_cfuvid`).
-- Não usar o navegador pessoal do usuário para isso sem ele pedir.
+Não usar o Claude in Chrome como atalho para captcha: ele pode estar ligado ao Chrome de outro computador com a mesma conta.
+
+## Rotas e privacidade
+
+- Rota `direta` (a internet deste computador) e, se o `config.json` tiver, rotas por túnel SSH: barrou numa, tenta a próxima e lembra por 2 h.
+- Cookies só na memória; depois de cada leitura, apaga todo cookie que não seja de domínio oficial (`.jus.br`, `.gov.br`, `.leg.br`, `.mp.br`, `.def.br`) nem técnico de verificação (`cf_clearance`, `__cf_bm`, `_cfuvid`).
+- Os arquivos temporários (`texto-*`, `arquivo-*`) somem sozinhos depois de um dia.

@@ -64,9 +64,10 @@ Ok "skill em $skill"
 
 # 6. Teste
 Passo 'Testando (abre o navegador escondido e le uma pagina do Planalto)'
-$teste = & node (Join-Path $destino 'ler-pagina.mjs') 'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm' 2>&1
-if ($LASTEXITCODE -eq 0 -and ($teste -join ' ') -match 'Constitui') { Ok 'funcionou' }
+$teste = & node (Join-Path $destino 'ler-pagina.mjs') 'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm' --buscar 'Art. 5' --contexto 0 2>&1
+if ($LASTEXITCODE -eq 0 -and ($teste -join ' ') -match 'Todos s') { Ok "funcionou (versao $(& node (Join-Path $destino 'ler-pagina.mjs') --versao))" }
 else { Write-Host "  O teste nao passou. Mensagem: $($teste | Select-Object -First 3)" -ForegroundColor Yellow }
 
 Write-Host "`nPronto. Feche e abra de novo o Claude Code. Quando ele nao conseguir abrir um site por causa de verificacao anti-robo, vai usar o ler-pagina sozinho." -ForegroundColor White
+Write-Host 'Para atualizar no futuro, rode de novo a mesma linha da instalacao (sua configuracao e mantida).'
 Write-Host 'Para desinstalar: powershell -ExecutionPolicy Bypass -File "%LOCALAPPDATA%\Programs\ler-pagina\desinstalar.ps1"'
