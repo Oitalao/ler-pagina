@@ -184,6 +184,24 @@ const cdp = (method, params = {}, sessionId, limite = 30000) => new Promise((ok,
   pend.set(id, { ok: v => { clearTimeout(t); ok(v); }, erro: e => { clearTimeout(t); erro(e); } });
   ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
 });
+// se a conexao cair, todo pedido pendente falha na hora, em vez de esperar o prazo inteiro
+const conexaoCaiu = () => { for (const [, p] of pend) p.erro(new Error('a conexao com o navegador caiu')); pend.clear(); };
+ws.onclose = conexaoCaiu; ws.onerror = conexaoCaiu;
+
+// Valor grande (HTML, texto extraido, arquivo em base64) vem em pedacos: desde o Chrome 157 (16/11/2026)
+// a conexao com o navegador cai quando uma unica resposta passa de ~4 MB (a pagina da CLT no Planalto tem 3,7 MB
+// de HTML, que vira mais que isso em JSON). Guarda o valor numa variavel da pagina e busca por fatias.
+const PEDACO = 500000;
+async function valorGrande(s, expressao, extra = {}, limite = 60000) {
+  const chave = '__lp' + Math.random().toString(36).slice(2);
+  const r = await s('Runtime.evaluate', { expression: `(async()=>{const v=await (${expressao});globalThis.${chave}=typeof v==='string'?v:JSON.stringify(v);return globalThis.${chave}.length})()`, awaitPromise: true, returnByValue: true, ...extra }, limite);
+  if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text || 'erro no navegador');
+  const n = r.result.value; let out = '';
+  for (let i = 0; i < n; i += PEDACO)
+    out += (await s('Runtime.evaluate', { expression: `globalThis.${chave}.slice(${i},${i + PEDACO})`, returnByValue: true, ...extra }, limite)).result.value;
+  s('Runtime.evaluate', { expression: `delete globalThis.${chave}`, ...extra }).catch(() => {});
+  return out;
+}
 
 async function contextoDaRota(nome) {
   return comTrava(async () => {
@@ -451,8 +469,9 @@ async function tentar(url, rota) {
     // ERR_ABORTED e o Chrome entregando o endereco como download (PDF com "attachment"): segue e baixa abaixo
     if (nav.errorText && nav.errorText !== 'net::ERR_ABORTED') throw new Error(`o navegador nao abriu o endereco (${nav.errorText})`);
     const ler = async () => {
-      const doc = await s('DOM.getDocument', { depth: 0 });
-      const html = (await s('DOM.getOuterHTML', { nodeId: doc.root.nodeId })).outerHTML;
+      const { frameTree } = await s('Page.getFrameTree');
+      const { executionContextId } = await s('Page.createIsolatedWorld', { frameId: frameTree.frame.id, worldName: 'ler-pagina' });
+      const html = await valorGrande(s, `(document.doctype?new XMLSerializer().serializeToString(document.doctype):'')+(document.documentElement?document.documentElement.outerHTML:'')`, { contextId: executionContextId });
       const texto = html.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ')
         .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/\s+/g, ' ').trim();
       let mime = '';
@@ -464,8 +483,7 @@ async function tentar(url, rota) {
       try {
         const { frameTree } = await s('Page.getFrameTree');
         const { executionContextId } = await s('Page.createIsolatedWorld', { frameId: frameTree.frame.id, worldName: 'ler-pagina' });
-        const v = await s('Runtime.evaluate', { expression: `${EXTRATOR}(${!!md}, ${tem('--com-revogados')})`, contextId: executionContextId, returnByValue: true }, 60000);
-        const o = JSON.parse(v.result.value);
+        const o = JSON.parse(await valorGrande(s, `${EXTRATOR}(${!!md}, ${tem('--com-revogados')})`, { contextId: executionContextId }, 60000));
         if (o.texto.length >= 100 || r.texto.length < 300) {
           const t = o.titulo && !o.texto.startsWith(o.titulo) ? (md ? `# ${o.titulo}\n\n` : `${o.titulo}\n`) + o.texto : o.texto;
           return (o.status >= 400 ? `[HTTP ${o.status}: o site respondeu com erro]\n` : '') + t;
@@ -518,8 +536,8 @@ async function tentar(url, rota) {
       let resp;
       if (rota !== 'direta') {
         // por tunel, o download tambem sai por la: baixa dentro do proprio navegador
-        const b64 = await s('Runtime.evaluate', { expression: `fetch(${JSON.stringify(url)}).then(r=>r.arrayBuffer()).then(b=>{let s='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode(...u.subarray(i,i+32768));return btoa(s)})`, awaitPromise: true, returnByValue: true }, 180000);
-        resp = { ok: true, status: 200, tipo: '', buf: Buffer.from(b64.result.value || '', 'base64') };
+        const b64 = await valorGrande(s, `fetch(${JSON.stringify(url)}).then(r=>r.arrayBuffer()).then(b=>{let s='';const u=new Uint8Array(b);for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode(...u.subarray(i,i+32768));return btoa(s)})`, {}, 180000);
+        resp = { ok: true, status: 200, tipo: '', buf: Buffer.from(b64 || '', 'base64') };
       } else {
         // so os cookies que o proprio navegador mandaria a este endereco
         const { cookies } = await s('Network.getCookies', { urls: [url] });
